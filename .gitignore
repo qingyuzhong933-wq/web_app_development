@@ -1,0 +1,35 @@
+# Python 虛擬環境
+venv/
+.venv/
+env/
+.env/
+
+# Python 快取
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# 環境設定
+.env
+*.env
+
+# SQLite 資料庫
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS 產生的檔案
+.DS_Store
+Thumbs.db
+
+# Flask session / 暫存
+flask_session/
+instance/
