@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}我的任務 - TaskFlow{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- 左側：新增任務表單 -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title fw-bold mb-3">新增任務</h5>
+                <form action="{{ url_for('tasks.add_task') }}" method="POST">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">任務名稱</label>
+                        <input type="text" class="form-control" id="title" name="title" placeholder="要做什麼？" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="points" class="form-label">獎勵積分 (1-100)</label>
+                        <input type="number" class="form-control" id="points" name="points" value="10" min="1" max="100">
+                    </div>
+                    <div class="mb-3">
+                        <label for="due_date" class="form-label">截止日期</label>
+                        <input type="date" class="form-control" id="due_date" name="due_date">
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">備註 (選填)</label>
+                        <textarea class="form-control" id="description" name="description" rows="2"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">新增</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右側：任務清單 -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title fw-bold mb-3">今日任務清單</h5>
+                {% if tasks %}
+                    <div class="list-group list-group-flush">
+                        {% for task in tasks %}
+                            <div class="list-group-item d-flex align-items-center py-3 {% if task.is_done %}bg-light{% endif %}">
+                                <!-- 完成勾選框 -->
+                                <form action="{{ url_for('tasks.toggle_task', id=task.id) }}" method="POST" class="me-3">
+                                    <input type="checkbox" class="form-check-input" onChange="this.form.submit()" {% if task.is_done %}checked{% endif %}>
+                                </form>
+                                
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-0 {% if task.is_done %}text-decoration-line-through text-muted{% endif %}">
+                                        {{ task.title }}
+                                        <span class="badge bg-primary rounded-pill ms-2">+{{ task.points }}</span>
+                                    </h6>
+                                    {% if task.due_date %}
+                                        <small class="text-muted">截止日：{{ task.due_date.strftime('%Y-%m-%d') }}</small>
+                                    {% endif %}
+                                </div>
+
+                                <!-- 操作按鈕 -->
+                                <div class="ms-auto d-flex">
+                                    <a href="{{ url_for('tasks.edit_task', id=task.id) }}" class="btn btn-sm btn-outline-secondary me-2">編輯</a>
+                                    <form action="{{ url_for('tasks.delete_task', id=task.id) }}" method="POST" onsubmit="return confirm('確定要刪除此任務嗎？')">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">刪除</button>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-center text-muted my-5">目前沒有任務，快去新增一個吧！</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

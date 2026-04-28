@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}積分歷程 - TaskFlow{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="card-title fw-bold mb-0">積分變動歷程</h5>
+                    <div class="text-end">
+                        <span class="text-muted">目前累積總積分：</span>
+                        <span class="h4 fw-bold text-primary">{{ total_points }}</span>
+                    </div>
+                </div>
+
+                {% if logs %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>時間</th>
+                                    <th>原因</th>
+                                    <th class="text-center">變動值</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in logs %}
+                                    <tr>
+                                        <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                        <td>{{ log.reason or '無備註' }}</td>
+                                        <td class="text-center fw-bold {% if log.delta > 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {{ "+" if log.delta > 0 else "" }}{{ log.delta }}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-center text-muted my-5">目前尚無積分紀錄。</p>
+                {% endif %}
+                
+                <div class="mt-4">
+                    <a href="{{ url_for('tasks.index') }}" class="btn btn-outline-primary">返回任務清單</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

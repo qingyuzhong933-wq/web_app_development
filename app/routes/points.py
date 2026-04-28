@@ -7,4 +7,6 @@ points_bp = Blueprint('points', __name__)
 @points_bp.route('/points/log')
 def log():
     """顯示積分變動歷程清單"""
-    pass
+    logs = PointLog.get_all()
+    total_points = PointLog.get_total_points()
+    return render_template('point_log.html', logs=logs, total_points=total_points)
