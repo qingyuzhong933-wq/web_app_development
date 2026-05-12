@@ -25,8 +25,10 @@ def create_app():
     # 註冊藍圖 (Blueprints)
     from app.routes.tasks import tasks_bp
     from app.routes.points import points_bp
-    
-    app.register_blueprint(tasks_bp)
+    from app.routes.transit import transit_bp
+
+    app.register_blueprint(transit_bp)   # F-01 一站式平台（覆蓋首頁 /）
+    app.register_blueprint(tasks_bp, url_prefix='/taskflow')
     app.register_blueprint(points_bp)
 
     return app

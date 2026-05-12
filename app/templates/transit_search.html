@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>台中大眾運輸一站式查詢平台</title>
+  <meta name="description" content="整合台中公車、捷運、台鐵、高鐵即時資訊，輸入起點與終點即可查詢最佳路線、轉乘資訊與票價。">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #21262d;
+      --border: #30363d;
+      --accent: #3fb950;
+      --accent2: #58a6ff;
+      --warn: #f0883e;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --metro: #58a6ff;
+      --bus: #3fb950;
+      --train: #f0883e;
+      --walk: #8b949e;
+      --radius: 12px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(8px);
+    }
+    .logo { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.5px; }
+    .logo span { color: var(--accent2); }
+    .logo .dot { color: var(--accent); }
+    .tag {
+      font-size: 0.7rem;
+      background: rgba(63,185,80,.15);
+      color: var(--accent);
+      border: 1px solid rgba(63,185,80,.3);
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+    .nav-links { margin-left: auto; display: flex; gap: 8px; }
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      padding: 6px 12px;
+      border-radius: 6px;
+      transition: all .2s;
+    }
+    .nav-links a:hover { color: var(--text); background: var(--surface2); }
+
+    /* ── Hero Search Section ── */
+    .hero {
+      background: linear-gradient(160deg, #0d1117 0%, #0f1e2e 50%, #0d1117 100%);
+      padding: 56px 24px 40px;
+      text-align: center;
+    }
+    .hero h1 {
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 8px;
+    }
+    .hero h1 em { font-style: normal; color: var(--accent2); }
+    .hero p { color: var(--muted); font-size: 0.95rem; margin-bottom: 32px; }
+
+    /* ── Search Card ── */
+    .search-card {
+      max-width: 720px;
+      margin: 0 auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.4);
+    }
+    .search-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .input-group { position: relative; }
+    .input-group label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 6px;
+    }
+    .input-group input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.95rem;
+      padding: 12px 16px;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .input-group input:focus {
+      border-color: var(--accent2);
+      box-shadow: 0 0 0 3px rgba(88,166,255,.15);
+    }
+    .autocomplete-list {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0; right: 0;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      z-index: 50;
+      display: none;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .autocomplete-list li {
+      list-style: none;
+      padding: 10px 16px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      transition: background .15s;
+    }
+    .autocomplete-list li:hover, .autocomplete-list li.active {
+      background: var(--border);
+      color: var(--accent2);
+    }
+    .swap-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      width: 40px; height: 40px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 1rem;
+      transition: all .2s;
+      margin-top: 20px;
+      flex-shrink: 0;
+    }
+    .swap-btn:hover { border-color: var(--accent2); color: var(--accent2); transform: rotate(180deg); }
+    .search-btn {
+      width: 100%;
+      background: linear-gradient(90deg, #2ea043, #3fb950);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      padding: 14px;
+      cursor: pointer;
+      transition: opacity .2s, transform .1s;
+      letter-spacing: .3px;
+    }
+    .search-btn:hover { opacity: .9; }
+    .search-btn:active { transform: scale(.98); }
+
+    /* ── Mode chips ── */
+    .mode-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .chip {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all .2s;
+      color: var(--muted);
+    }
+    .chip.active { border-color: var(--accent2); color: var(--accent2); background: rgba(88,166,255,.1); }
+
+    /* ── Main Container ── */
+    main { max-width: 900px; margin: 0 auto; padding: 32px 24px 64px; }
+
+    /* ── Error / Empty ── */
+    .msg-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      text-align: center;
+      color: var(--muted);
+      margin-top: 24px;
+    }
+    .msg-box.error { border-color: #f85149; color: #f85149; }
+
+    /* ── Result Cards ── */
+    .results-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 16px;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .results-header strong { color: var(--text); font-size: 1rem; }
+    .route-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+      overflow: hidden;
+      transition: border-color .2s, box-shadow .2s;
+      cursor: pointer;
+    }
+    .route-card:hover { border-color: #444c56; box-shadow: 0 4px 20px rgba(0,0,0,.3); }
+    .route-card.recommended { border-color: rgba(63,185,80,.4); }
+    .route-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .route-icon { font-size: 1.4rem; }
+    .route-name { font-weight: 700; font-size: 1rem; flex: 1; }
+    .rec-badge {
+      background: rgba(63,185,80,.15);
+      color: var(--accent);
+      border: 1px solid rgba(63,185,80,.3);
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+    .route-summary {
+      display: flex;
+      gap: 24px;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .summary-item { text-align: center; }
+    .summary-val { font-size: 1.3rem; font-weight: 700; color: var(--text); }
+    .summary-val span { font-size: 0.75rem; font-weight: 500; color: var(--muted); }
+    .summary-lbl { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+    .route-steps { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .step-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      margin-top: 5px;
+      flex-shrink: 0;
+    }
+    .step-dot.metro { background: var(--metro); }
+    .step-dot.bus   { background: var(--bus); }
+    .step-dot.train { background: var(--train); }
+    .step-dot.walk  { background: var(--walk); border: 2px dashed #555; background: transparent; }
+    .step-info { flex: 1; }
+    .step-desc { font-size: 0.88rem; color: var(--text); }
+    .step-meta { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+    .step-badge {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .step-badge.metro { background: rgba(88,166,255,.15); color: var(--metro); }
+    .step-badge.bus   { background: rgba(63,185,80,.15);  color: var(--bus);   }
+    .step-badge.train { background: rgba(240,136,62,.15); color: var(--train); }
+    .note-box {
+      background: rgba(240,136,62,.08);
+      border: 1px solid rgba(240,136,62,.25);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.8rem;
+      color: var(--warn);
+      margin-top: 8px;
+    }
+
+    /* ── Features Section ── */
+    .features { margin-top: 48px; }
+    .features h2 { font-size: 1rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: border-color .2s;
+    }
+    .feature-card:hover { border-color: #444c56; }
+    .feature-icon { font-size: 1.6rem; margin-bottom: 10px; }
+    .feature-name { font-size: 0.9rem; font-weight: 600; margin-bottom: 4px; }
+    .feature-desc { font-size: 0.78rem; color: var(--muted); line-height: 1.5; }
+    .f-status {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 10px;
+      margin-top: 8px;
+    }
+    .f-status.done { background: rgba(63,185,80,.15); color: var(--accent); }
+    .f-status.wip  { background: rgba(88,166,255,.15); color: var(--accent2); }
+
+    @media (max-width: 600px) {
+      .search-row { grid-template-columns: 1fr; }
+      .swap-btn { margin: 0 auto; transform: rotate(90deg); }
+      .swap-btn:hover { transform: rotate(270deg); }
+      .route-summary { flex-wrap: wrap; gap: 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <div class="logo">台中<span>運</span>輸<span class="dot">•</span></div>
+  <div class="tag">Beta</div>
+  <nav class="nav-links">
+    <a href="/">查詢路線</a>
+    <a href="/points/log">積分歷程</a>
+  </nav>
+</header>
+
+<!-- ── Hero + Search ── -->
+<section class="hero">
+  <h1>一站查詢，<em>聰明出發</em></h1>
+  <p>整合台中公車・捷運・台鐵・高鐵，輸入起點與終點立即找最佳路線</p>
+
+  <div class="search-card">
+    <!-- 交通工具篩選 -->
+    <div class="mode-chips">
+      <div class="chip active" data-mode="all">🚌🚇🚆 全部</div>
+      <div class="chip" data-mode="bus">🚌 公車</div>
+      <div class="chip" data-mode="metro">🚇 捷運</div>
+      <div class="chip" data-mode="train">🚆 台鐵/高鐵</div>
+    </div>
+
+    <form id="searchForm" action="/search" method="GET">
+      <div class="search-row">
+        <!-- 起點 -->
+        <div class="input-group">
+          <label for="fromInput">📍 起點</label>
+          <input id="fromInput" name="from" type="text" placeholder="輸入起點站點或地址"
+                 value="{{ origin or '' }}" autocomplete="off">
+          <ul class="autocomplete-list" id="fromList"></ul>
+        </div>
+        <!-- 交換按鈕 -->
+        <button type="button" class="swap-btn" id="swapBtn" title="互換起訖點">⇄</button>
+        <!-- 終點 -->
+        <div class="input-group">
+          <label for="toInput">🏁 終點</label>
+          <input id="toInput" name="to" type="text" placeholder="輸入終點站點或地址"
+                 value="{{ destination or '' }}" autocomplete="off">
+          <ul class="autocomplete-list" id="toList"></ul>
+        </div>
+      </div>
+      <button type="submit" class="search-btn" id="searchBtn">🔍 查詢最佳路線</button>
+    </form>
+  </div>
+</section>
+
+<!-- ── Main Results ── -->
+<main>
+
+  {% if error %}
+  <div class="msg-box error">⚠️ {{ error }}</div>
+
+  {% elif searched and not results %}
+  <div class="msg-box">
+    😕 找不到「{{ origin }}」→「{{ destination }}」的路線資料。<br>
+    <small style="margin-top:6px;display:block;">目前 TDX API 尚未串接，僅支援部分模擬路線。</small>
+  </div>
+
+  {% elif results %}
+  <div class="results-header">
+    <strong>{{ origin }} → {{ destination }}</strong>
+    <span>共 {{ results|length }} 條路線</span>
+  </div>
+
+  {% for r in results %}
+  <div class="route-card {% if r.recommend %}recommended{% endif %}">
+    <div class="route-header">
+      <div class="route-icon">{{ r.icon }}</div>
+      <div class="route-name">{{ r.mode }}</div>
+      {% if r.recommend %}<div class="rec-badge">✦ 推薦</div>{% endif %}
+    </div>
+
+    <div class="route-summary">
+      <div class="summary-item">
+        <div class="summary-val">{{ r.total_time }}<span> 分</span></div>
+        <div class="summary-lbl">預估時間</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-val">NT$<span> </span>{{ r.total_fare }}</div>
+        <div class="summary-lbl">總票價</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-val">{{ r.transfers }}<span> 次</span></div>
+        <div class="summary-lbl">轉乘次數</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-val" style="font-size:.95rem;">{{ r.arrive_time }}</div>
+        <div class="summary-lbl">抵達時間</div>
+      </div>
+    </div>
+
+    <div class="route-steps">
+      {% for step in r.steps %}
+      <div class="step">
+        <div class="step-dot {{ step.type }}"></div>
+        <div class="step-info">
+          <div class="step-desc">
+            {{ step.desc }}
+            {% if step.type in ['metro','bus','train'] %}
+            <span class="step-badge {{ step.type }}">
+              {% if step.type == 'metro' %}捷運{% elif step.type == 'bus' %}公車 {{ step.get('route','') }}{% else %}火車{% endif %}
+            </span>
+            {% endif %}
+          </div>
+          <div class="step-meta">
+            {% if step.duration %}約 {{ step.duration }} 分鐘{% endif %}
+            {% if step.fare %} ・ NT$ {{ step.fare }}{% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+
+      {% if r.note is defined and r.note %}
+      <div class="note-box">{{ r.note }}</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+
+  {% else %}
+  <!-- 功能介紹（無查詢時顯示） -->
+  <div class="features">
+    <h2>平台功能模組</h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🗺️</div>
+        <div class="feature-name">一站式查詢</div>
+        <div class="feature-desc">輸入起訖點，整合公車・捷運・台鐵・高鐵路線資訊。</div>
+        <span class="f-status done">F-01 ✓ 完成</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📡</div>
+        <div class="feature-name">即時動態</div>
+        <div class="feature-desc">串接 TDX API，顯示公車到站位置與捷運班次。</div>
+        <span class="f-status wip">F-02 開發中</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔀</div>
+        <div class="feature-name">轉乘路徑演算</div>
+        <div class="feature-desc">自動計算捷運＋公車等組合的最佳路徑與 ETA。</div>
+        <span class="f-status wip">F-03 開發中</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💰</div>
+        <div class="feature-name">票價試算</div>
+        <div class="feature-desc">即時計算各路線預估花費，幫助比較成本。</div>
+        <span class="f-status wip">F-04 開發中</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⭐</div>
+        <div class="feature-name">常用路線收藏</div>
+        <div class="feature-desc">一鍵收藏常用路線與轉乘點，快速再次查詢。</div>
+        <span class="f-status wip">F-05 開發中</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">👥</div>
+        <div class="feature-name">站點擁擠度</div>
+        <div class="feature-desc">顯示紅・橘・綠擁擠指標，掌握搭乘舒適度。</div>
+        <span class="f-status wip">F-07 開發中</span>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</main>
+
+<script>
+const STATIONS = {{ stations | tojson }};
+
+function setupAutocomplete(inputId, listId) {
+  const input = document.getElementById(inputId);
+  const list  = document.getElementById(listId);
+  let active = -1;
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim();
+    list.innerHTML = '';
+    active = -1;
+    if (!q) { list.style.display = 'none'; return; }
+    const matches = STATIONS.filter(s => s.includes(q)).slice(0, 8);
+    if (!matches.length) { list.style.display = 'none'; return; }
+    matches.forEach(s => {
+      const li = document.createElement('li');
+      li.textContent = s;
+      li.addEventListener('mousedown', () => { input.value = s; list.style.display = 'none'; });
+      list.appendChild(li);
+    });
+    list.style.display = 'block';
+  });
+
+  input.addEventListener('keydown', e => {
+    const items = list.querySelectorAll('li');
+    if (e.key === 'ArrowDown') { active = Math.min(active + 1, items.length - 1); }
+    else if (e.key === 'ArrowUp') { active = Math.max(active - 1, 0); }
+    else if (e.key === 'Enter' && active >= 0) {
+      e.preventDefault();
+      input.value = items[active].textContent;
+      list.style.display = 'none';
+    } else { return; }
+    items.forEach((li, i) => li.classList.toggle('active', i === active));
+  });
+
+  document.addEventListener('click', e => {
+    if (!input.contains(e.target)) list.style.display = 'none';
+  });
+}
+
+setupAutocomplete('fromInput', 'fromList');
+setupAutocomplete('toInput',   'toList');
+
+// 起訖點互換
+document.getElementById('swapBtn').addEventListener('click', () => {
+  const fi = document.getElementById('fromInput');
+  const ti = document.getElementById('toInput');
+  [fi.value, ti.value] = [ti.value, fi.value];
+});
+
+// 交通工具篩選 chip
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+  });
+});
+
+// 路線卡片展開動畫
+document.querySelectorAll('.route-card').forEach(card => {
+  card.addEventListener('click', () => card.classList.toggle('expanded'));
+});
+</script>
+</body>
+</html>
